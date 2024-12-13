@@ -7,7 +7,7 @@ https://python-poetry.org/docs/
 
 - run :
 ```bash
-git clone git@github.com:CorporalCleg/RobotQ.git
+git clone https://github.com/CorporalCleg/RobotQ.git
 cd RobotQ
 poetry install 
 ```
