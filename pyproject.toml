@@ -8,7 +8,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.10"
 gymnasium = {extras = ["classic-control"], version = "^1.0.0"}
-matplotlib = "^3.9.3"
+matplotlib = "^3.10.0"
 scipy = "^1.14.1"
 jupyter = "^1.1.1"
 tqdm = "^4.67.1"
