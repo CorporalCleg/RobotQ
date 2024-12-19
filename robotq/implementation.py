@@ -7,60 +7,132 @@ import gymnasium as gym
 from tqdm.notebook import tqdm
 
 
-def initialize_q_table(state_space, action_space):
+def initialize_q_table(state_space, action_space):  # use it to make Q-table
     Qtable = np.zeros((state_space, action_space))
     return Qtable
 
-
 class Policy:
-    def __call__(Qtable, state):
+    """
+    A policy template class that defines the interface for different policies.
+
+    The policy class is responsible for selecting an action given a Q-table and a state.
+    """
+
+    def __call__(self, Qtable, state):
+        """
+        Selects an action given a Q-table and a state.
+
+        Args:
+        Qtable (numpy.array): The Q-table.
+        state (int): The current state.
+
+        Returns:
+        int: The selected action.
+        """
         pass
 
-    def update():
+    def update(self):
+        """
+        Updates the policy.
+
+        This method is currently a placeholder and does not perform any updates.
+        """
         None
 
 
 class GreedyPolicy(Policy):
+    """
+    A simple greedy policy that selects the action with the highest Q-value.
+
+    Attributes:
+    None
+    """
+
     def __init__(self):
+        """
+        Initializes the GreedyPolicy class.
+
+        Calls the Policy class constructor.
+        """
         super().__init__()
 
     def __call__(self, Qtable, state):
+        """
+        Selects the action with the highest Q-value.
+
+        Args:
+        Qtable (numpy.array): The Q-table.
+        state (int): The current state.
+
+        Returns:
+        int: The action with the highest Q-value.
+        """
         return np.argmax(Qtable[state][:])
 
 
-class EpsilonGreedyPolicy(Policy):
-    def __init__(self):
-        super().__init__()
-        self.greedy = GreedyPolicy()
-
-    def __call__(self, Qtable, state):
-        random_num = np.random.binomial(1, 0.2)
-        # if random_num > greater than epsilon --> exploitation
-        if random_num:
-            # Take the action with the highest value given a state
-            # np.argmax can be useful here
-            action = self.greedy(Qtable, state)
-            # else --> exploration
-        else:
-            action = env.action_space.sample()
-        return action
-
-
 def softmax(seq):
+    """
+    Computes the softmax of a sequence.
+
+    Args:
+    seq (numpy.array): The input sequence.
+
+    Returns:
+    numpy.array: The softmax of the input sequence.
+    """
     a = np.exp(seq)
     return a / (1e-10 + a.sum())
 
 
 class SoftmaxPolicy(Policy):
+    """
+    A softmax policy that selects an action with probability proportional to its Q-value.
+
+    Attributes:
+    None
+    """
+
     def __init__(self):
+        """
+        Initializes the SoftmaxPolicy class.
+
+        Calls the Policy class constructor.
+        """
         super().__init__()
 
-    def __call__(self, Qtable, state):  # take action with prob. of it's value
+    def __call__(self, Qtable, state):
+        """
+        Selects an action using the softmax strategy.
+
+        Args:
+        Qtable (numpy.array): The Q-table.
+        state (int): The current state.
+
+        Returns:
+        int: The selected action.
+        """
         return np.random.choice([0, 1, 2, 3], p=softmax(Qtable[state][:]))
 
-
 class Qlearning:
+    """
+    Q-learning is a model-free reinforcement learning algorithm that learns to predict the expected return of an action in a given state.
+
+    Attributes:
+    env (gym.Env): The environment to train the agent in.
+    train_policy (function): The policy to use for training.
+    nS (int): The number of states in the environment.
+    nA (int): The number of actions in the environment.
+    Qtable (numpy.array): The Q-table to store the action values.
+    """
+
     def __init__(self, env, train_policy):
+        """
+        Initializes the Q-learning agent.
+
+        Args:
+        env (gym.Env): The environment to train the agent in.
+        train_policy (function): The policy to use for training.
+        """
         self.env = env
         self.nS = env.observation_space.n
         self.nA = env.action_space.n
@@ -68,9 +140,21 @@ class Qlearning:
         self.train_policy = train_policy
 
     def train(self, n_training_episodes=10, max_steps=10, lr=0.7, gamma=0.99):
+        """
+        Trains the Q-learning agent.
+
+        Args:
+        n_training_episodes (int, optional): The number of training episodes. Defaults to 10.
+        max_steps (int, optional): The maximum number of steps per episode. Defaults to 10.
+        lr (float, optional): The learning rate. Defaults to 0.7.
+        gamma (float, optional): The discount factor. Defaults to 0.99.
+
+        Returns:
+        numpy.array: The trained Q-table.
+        """
         for episode in tqdm(range(n_training_episodes)):
             # self.train_policy.step()
-            state, info = env.reset()
+            state, info = self.env.reset()
             for step in range(max_steps):
 
                 action = self.train_policy(self.Qtable, state)
@@ -83,7 +167,7 @@ class Qlearning:
                     + gamma * np.max(self.Qtable[new_state])
                     - self.Qtable[state][action]
                 )
-                
+
                 self.Qtable[state][action] = self.Qtable[state][action] + lr * td_error
 
                 # If terminated or truncated finish the episode
@@ -94,50 +178,126 @@ class Qlearning:
                 state = new_state
         return self.Qtable
 
+class DynaQ:
+    """
+    Dyna-Q is a model-based reinforcement learning algorithm that combines Q-learning with planning.
 
-class DoubleQlearning:
+    Attributes:
+    env (gym.Env): The environment to train the agent in.
+    train_policy (function): The policy to use for training.
+    nS (int): The number of states in the environment.
+    nA (int): The number of actions in the environment.
+    Qtable (numpy.array): The Q-table to store the action values.
+    """
+
     def __init__(self, env, train_policy):
+        """
+        Initializes the Dyna-Q agent.
+
+        Args:
+        env (gym.Env): The environment to train the agent in.
+        train_policy (function): The policy to use for training.
+        """
         self.env = env
-        self.nS = env.observation_space.n
-        self.nA = env.action_space.n
-        self.Qtable = initialize_q_table(self.nS, self.nA)
+        self.nS = self.env.observation_space.n
+        self.nA = self.env.action_space.n
+
+        self.Qtable = np.zeros((self.nS, self.nA))
         self.train_policy = train_policy
 
-    def train(self, n_training_episodes=10, max_steps=10, lr=0.7, gamma=0.99):
-        Q1 = np.zeros_like(self.Qtable)
-        Q2 = np.zeros_like(self.Qtable)
+    def train(
+        self,
+        n_training_episodes=10,
+        max_steps=10,
+        lr=0.7,
+        gamma=0.99,
+        n_planning=3,
+        return_model=False,
+    ):
+        """
+        Trains the Dyna-Q agent.
 
-        for episode in tqdm(range(n_training_episodes)):
-            # self.train_policy.step()
+        Args:
+        n_training_episodes (int, optional): The number of training episodes. Defaults to 10.
+        max_steps (int, optional): The maximum number of steps per episode. Defaults to 10.
+        lr (float, optional): The learning rate. Defaults to 0.7.
+        gamma (float, optional): The discount factor. Defaults to 0.99.
+        n_planning (int, optional): The number of planning steps. Defaults to 3.
+        return_model (bool, optional): Whether to return the model. Defaults to False.
+
+        Returns:
+        numpy.array: The trained Q-table, or the Q-table and the model if return_model is True.
+        """
+        T_count = np.zeros(
+            (self.nS, self.nA, self.nS), dtype=np.int32
+        )  # store frequencies
+        R_model = np.zeros(
+            (self.nS, self.nA, self.nS), dtype=np.float64
+        )  # store rewards
+
+        for e in tqdm(range(n_training_episodes)):
+
             state, info = self.env.reset()
+
             for step in range(max_steps):
 
-                action = self.train_policy((Q1 + Q2) / 2.0, state)
+                action = self.train_policy(self.Qtable, state)
                 new_state, reward, terminated, truncated, info = self.env.step(action)
 
                 done = terminated or truncated  # if we dont want to use next ep.
 
-                if np.random.randint(2):
-
-                    argmax = np.argmax(Q1[state][:])
-                    td_error = (
-                        reward + gamma * Q2[new_state][argmax] - Q1[state][action]
-                    )
-                    Q1[state][action] = Q1[state][action] + lr * td_error
-
-                else:
-                    argmax = np.argmax(Q2[state][:])
-                    td_error = (
-                        reward + gamma * Q1[new_state][argmax] - Q2[state][action]
-                    )
-                    Q2[state][action] = Q2[state][action] + lr * td_error
-
                 # If terminated or truncated finish the episode
-                if terminated or truncated:
-                    break
+
+                T_count[state, action, new_state] += 1  # learn our model
+                r_diff = reward - R_model[state, action, new_state]
+                R_model[state, action, new_state] += (
+                    r_diff / T_count[state, action, new_state]
+                )
+
+                td_error = (
+                    reward
+                    + gamma * np.max(self.Qtable[new_state])
+                    - self.Qtable[state][action]
+                )
+                self.Qtable[state][action] = self.Qtable[state][action] + lr * td_error
 
                 # Our next state is the new state
-                state = new_state
+                backup_state = new_state
 
-        self.Qtable = (Q1 + Q2) / 2.0
-        return self.Qtable
+                # utilize our model to learn agent
+                for _ in range(
+                    n_planning
+                ):  # sample (state, action, new_state) x n and re-learn reward
+
+                    if self.Qtable.sum() == 0:
+                        break
+
+                    visited_states = np.where(np.sum(T_count, axis=(1, 2)) > 0)[0]
+                    state = np.random.choice(visited_states)
+
+                    actions_taken = np.where(np.sum(T_count[state], axis=1) > 0)[0]
+                    action = np.random.choice(actions_taken)
+
+                    probs = T_count[state][action] / T_count[state][action].sum()
+
+                    next_state = np.random.choice(np.arange(self.nS), size=1, p=probs)[
+                        0
+                    ]
+
+                    reward = R_model[state][action][next_state]
+                    td_target = reward + gamma * self.Qtable[next_state].max()
+
+                    td_error = td_target - self.Qtable[state][action]
+
+                    self.Qtable[state][action] = (
+                        self.Qtable[state][action] + lr * td_error
+                    )
+
+                    state = backup_state
+
+                if done:
+                    break
+        if return_model:
+            return self.Qtable, R_model
+        else:
+            return self.Qtable
