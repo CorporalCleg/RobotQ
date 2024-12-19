@@ -113,6 +113,31 @@ class SoftmaxPolicy(Policy):
         """
         return np.random.choice([0, 1, 2, 3], p=softmax(Qtable[state][:]))
 
+
+class UCBPolicy(Policy):
+    def __init__(self, c):
+        super().__init__()
+        self.e = 0  # Count of actions taken so far (episodes)
+        self.c = c  # Exploration parameter
+        self.N = None  # Count of times each action has been taken
+
+    def __call__(self, Qtable, state):
+        Q = Qtable[state, :]
+        num_actions = len(Q)
+
+        if self.N is None or len(self.N) != num_actions:
+            self.N = np.zeros(num_actions)
+        if self.e < num_actions:
+            action = self.e
+        else:
+            with np.errstate(divide='ignore', invalid='ignore'):
+                U = np.sqrt(self.c * np.log(max(1, self.e)) / (self.N + 1e-8))
+            U[self.N == 0] = np.inf
+            action = np.argmax(Q + U)
+        self.N[action] += 1
+        self.e += 1
+        return action
+
 class Qlearning:
     """
     Q-learning is a model-free reinforcement learning algorithm that learns to predict the expected return of an action in a given state.
