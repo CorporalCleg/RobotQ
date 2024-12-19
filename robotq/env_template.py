@@ -17,7 +17,7 @@ class OurAwesomeEnv(gym.env):
 
     def reset(self, seed=0) -> int:  # reset environment
         super().reset(seed=seed)
-        pass
+        # self.state = init_state
 
     def step(self, action: int) -> (
         int,
