@@ -116,7 +116,8 @@ class OurAwesomeEnv(gym.Env):
         
         # if abs(self.map_sizes[0] - y) > self.map_sizes[0] // 2 or abs(self.map_sizes[1] - x) > self.map_sizes[1] // 2:
         #     return True
-        
+        if x >= self.collission_map.shape[2] or y >= self.collission_map.shape[1] or x < 0 or y < 0:
+            return True
         return self.collission_map[angle, y, x]
 
     def step(self, action: int) -> (
