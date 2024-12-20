@@ -198,13 +198,20 @@ class Qlearning:
         Returns:
         numpy.array: The trained Q-table.
         """
+        mean_reward_per_episode = []
+
         for episode in tqdm(range(n_training_episodes)):
             # self.train_policy.step()
             state, info = self.env.reset()
+            reward_per_episode = 0
+            reward_per_episode_cnt = 0
             for step in range(max_steps):
 
                 action = self.train_policy(self.Qtable, state)
                 new_state, reward, terminated, truncated, info = self.env.step(action)
+
+                reward_per_episode += reward
+                reward_per_episode_cnt+=1
 
                 done = terminated or truncated  # if we dont want to use next ep.
 
@@ -222,7 +229,8 @@ class Qlearning:
 
                 # Our next state is the new state
                 state = new_state
-        return self.Qtable
+            mean_reward_per_episode.append(reward_per_episode/reward_per_episode_cnt)
+        return self.Qtable, mean_reward_per_episode
 
 class DynaQ:
     """
