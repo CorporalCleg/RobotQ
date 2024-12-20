@@ -81,7 +81,7 @@ def softmax(seq):
     numpy.array: The softmax of the input sequence.
     """
     a = np.exp(seq)
-    return a / (1e-10 + a.sum())
+    return a / (a.sum())
 
 
 class SoftmaxPolicy(Policy):
@@ -111,7 +111,7 @@ class SoftmaxPolicy(Policy):
         Returns:
         int: The selected action.
         """
-        return np.random.choice([0, 1, 2, 3], p=softmax(Qtable[state][:]))
+        return np.random.choice(list(range(len(Qtable[state]))), p=softmax(Qtable[state][:]))
 
 
 class UCBPolicy(Policy):
