@@ -115,7 +115,7 @@ class SoftmaxPolicy(Policy):
 
 
 class UCBPolicy(Policy):
-    def __init__(self, c):
+    def __init__(self, c=1):
         super().__init__()
         self.e = 0  # Count of actions taken so far (episodes)
         self.c = c  # Exploration parameter
@@ -125,7 +125,7 @@ class UCBPolicy(Policy):
         Q = Qtable[state, :]
         num_actions = len(Q)
 
-        if self.N is None or len(self.N) != num_actions:
+        if self.N is None:
             self.N = np.zeros(num_actions)
         if self.e < num_actions:
             action = self.e
@@ -137,6 +137,27 @@ class UCBPolicy(Policy):
         self.N[action] += 1
         self.e += 1
         return action
+
+
+
+class ThompsonSamplingPolicy(Policy):
+
+    def __init__(self, alpha=1.0, beta=0.0):
+        self.alpha = alpha
+        self.beta = beta
+        self.N = None
+
+    def __call__(self, Qtable, state):
+        Q = Qtable[state, :]
+        if self.N is None:
+            self.N = np.zeros(len(Q))
+        samples = np.random.normal(
+            loc=Q, scale=self.alpha/(np.sqrt(self.N) + self.beta))
+        action = np.argmax(samples)
+
+        self.N[action] += 1
+        return action
+
 
 class Qlearning:
     """
