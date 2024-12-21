@@ -8,8 +8,10 @@ Here we provide:
 
 All the details can be viewed in the correspondong paper.
 
+https://github.com/CorporalCleg/RobotQ/blob/main/robotq/supporting%20notebooks/env.ipynb
+
 # Guide 
-We provide supporting notebooks, how our Q-learning implementation can be used for the solving of [other environments](./robotq/supporting notebooks/frozenlake.ipynb) and [our one](./robotq/supporting notebooks/env.ipynb).
+We provide supporting notebooks, how our Q-learning implementation can be used for the solving of [other environments](https://github.com/CorporalCleg/RobotQ/blob/main/robotq/supporting%20notebooks/frozenlake.ipynb) and [our one](https://github.com/CorporalCleg/RobotQ/blob/main/robotq/supporting%20notebooks/env.ipynb).
 
 # Installation
 
