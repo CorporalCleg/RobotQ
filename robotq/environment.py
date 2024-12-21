@@ -26,18 +26,18 @@ def generate_map(map_size=(40, 40), num_circles=10): # generate 100x100 map with
 def agent_image(): # generates images of 4 rotational states
     size = 11
     stick = np.zeros((4, size, size))
-
+    pad = 1
     stick[0, 0, size // 2] = 1
     stick[0, -1, size // 2] = 1
 
-    stick[1, 0, 0] = 1
-    stick[1, -1, -1] = 1
+    stick[1, 0+pad, 0+pad] = 1
+    stick[1, -1-pad, -1-pad] = 1
 
     stick[2, size // 2, 0] = 1
     stick[2, size // 2, -1] = 1
 
-    stick[3, 0, -1] = 1
-    stick[3, -1, 0] = 1
+    stick[3, 0+pad, -1-pad] = 1
+    stick[3, -1-pad, 0+pad] = 1
 
     return stick
 
