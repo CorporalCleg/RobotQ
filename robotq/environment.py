@@ -9,13 +9,13 @@ import random
 import imageio
 from tqdm.notebook import tqdm
 
-from utils import evaluate_agent, record_video
+# from utils import evaluate_agent, record_video
 
-def generate_map(map_size=(40, 40), num_circles=10): # generate 100x100 map with 10 circles
+def generate_map(map_size=(20, 20), num_circles=7): # generate 100x100 map with 10 circles
     gen_map = np.zeros(map_size)
 
     # define 
-    values, probs = [1, 2, 3, 4, 5], [0.4, 0.3, 0.2, 0.05, 0.05]
+    values, probs = [1, 2], [0.6, 0.4]
     for _ in range(num_circles):
         radius = np.random.choice(values, p=probs)
         cx, cy = np.random.randint(radius + 1, map_size[0] - radius - 1), np.random.randint(radius + 1, map_size[1] - radius - 1)
@@ -24,7 +24,7 @@ def generate_map(map_size=(40, 40), num_circles=10): # generate 100x100 map with
     return gen_map
 
 def agent_image(): # generates images of 4 rotational states
-    size = 11
+    size = 7
     stick = np.zeros((4, size, size))
 
     stick[0, 0, size // 2] = 1
@@ -114,8 +114,9 @@ class OurAwesomeEnv(gym.Env):
     def is_collisions(self, state): # check collisions
         y, x, angle = state
         
-        # if abs(self.map_sizes[0] - y) > self.map_sizes[0] // 2 or abs(self.map_sizes[1] - x) > self.map_sizes[1] // 2:
-        #     return True
+        h, w = self.g_map.shape
+        if x < 0 or x > w - 1 or y > h - 1 or y < 0:
+            return True
         
         return self.collission_map[angle, y, x]
 
@@ -136,7 +137,7 @@ class OurAwesomeEnv(gym.Env):
         ind4state = self._vect2ind(self.state)
 
         self.counter += 1
-
+        
         if self.state == self.goal_state:
             return (ind4state, 1.0, True, False, None) # desired goal
         elif self.is_collisions(self.state):

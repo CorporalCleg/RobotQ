@@ -1,5 +1,6 @@
 import random
 
+import wandb
 import imageio
 import numpy as np
 import matplotlib.pyplot as plt
@@ -10,6 +11,7 @@ from tqdm.notebook import tqdm
 def initialize_q_table(state_space, action_space):  # use it to make Q-table
     Qtable = np.zeros((state_space, action_space))
     return Qtable
+
 
 class Policy:
     """
@@ -125,7 +127,7 @@ class Qlearning:
     Qtable (numpy.array): The Q-table to store the action values.
     """
 
-    def __init__(self, env, train_policy):
+    def __init__(self, env, train_policy, log=None):
         """
         Initializes the Q-learning agent.
 
@@ -138,6 +140,10 @@ class Qlearning:
         self.nA = env.action_space.n
         self.Qtable = initialize_q_table(self.nS, self.nA)
         self.train_policy = train_policy
+        self.log = None
+        if log:
+            self.log = True
+            wandb.login()
 
     def train(self, n_training_episodes=10, max_steps=10, lr=0.7, gamma=0.99):
         """
@@ -152,9 +158,29 @@ class Qlearning:
         Returns:
         numpy.array: The trained Q-table.
         """
+
+        if self.log:
+            run = wandb.init(
+                # Set the project where this run will be logged
+                project="Q-learning",
+                # Track hyperparameters and run metadata
+                config={
+                    "learning_rate": lr,
+                    "epochs": n_training_episodes,
+                },
+            )
+
         for episode in tqdm(range(n_training_episodes)):
             # self.train_policy.step()
             state, info = self.env.reset()
+            if self.log:
+                wandb.log({"Q[0]":self.Qtable[state][0],
+                            "Q[1]":self.Qtable[state][1],
+                            "Q[2]":self.Qtable[state][2],
+                            "Q[3]":self.Qtable[state][3],
+                            "Q[4]":self.Qtable[state][4],
+                            "Q[5]":self.Qtable[state][5]
+                        })
             for step in range(max_steps):
 
                 action = self.train_policy(self.Qtable, state)
@@ -176,7 +202,73 @@ class Qlearning:
 
                 # Our next state is the new state
                 state = new_state
+            
         return self.Qtable
+
+class DoubleQlearning(Qlearning):
+    """
+    Double Q-learning is a model-free reinforcement learning algorithm that combines
+    the Q-learning updates from two Q-tables to reduce the overestimation bias.
+
+    Attributes:
+    env (gym.Env): The environment to train the agent in.
+    train_policy (function): The policy to use for training.
+    nS (int): The number of states in the environment.
+    nA (int): The number of actions in the environment.
+    Qtable1 (numpy.array): The first Q-table to store action values.
+    Qtable2 (numpy.array): The second Q-table to store action values.
+    """
+
+    def __init__(self, env, train_policy):
+        super().__init__(env, train_policy)
+        self.Qtable1 = initialize_q_table(self.nS, self.nA)
+        self.Qtable2 = initialize_q_table(self.nS, self.nA)
+
+    def train(self, n_training_episodes=10, max_steps=10, lr=0.7, gamma=0.99):
+        """
+        Trains the Double Q-learning agent.
+
+        Args:
+        n_training_episodes (int, optional): The number of training episodes. Defaults to 10.
+        max_steps (int, optional): The maximum number of steps per episode. Defaults to 10.
+        lr (float, optional): The learning rate. Defaults to 0.7.
+        gamma (float, optional): The discount factor. Defaults to 0.99.
+
+        Returns:
+        numpy.array: The trained Q-table.
+        """
+        for episode in tqdm(range(n_training_episodes)):
+            state, info = self.env.reset()
+            for step in range(max_steps):
+
+                action = self.train_policy(self.Qtable1, state)
+                
+                # Select the table to update
+                if np.random.rand() < 0.5:
+                    Qtable = self.Qtable1
+                else:
+                    Qtable = self.Qtable2
+
+                new_state, reward, terminated, truncated, info = self.env.step(action)
+
+                done = terminated or truncated
+
+                # Double Q-learning update
+                other_table = self.Qtable2 if Qtable is self.Qtable1 else self.Qtable1
+                td_error = (
+                    reward
+                    + gamma * np.max(other_table[new_state])
+                    - Qtable[state][action]
+                )
+
+                Qtable[state][action] = Qtable[state][action] + lr * td_error
+
+                if terminated or truncated:
+                    break
+
+                state = new_state
+        return (self.Qtable1 + self.Qtable2) / 2.0
+
 
 class DynaQ:
     """
@@ -229,10 +321,10 @@ class DynaQ:
         numpy.array: The trained Q-table, or the Q-table and the model if return_model is True.
         """
         T_count = np.zeros(
-            (self.nS, self.nA, self.nS), dtype=np.int32
+            (self.nS, self.nA, self.nS), dtype=np.int16
         )  # store frequencies
         R_model = np.zeros(
-            (self.nS, self.nA, self.nS), dtype=np.float64
+            (self.nS, self.nA, self.nS), dtype=np.float32
         )  # store rewards
 
         for e in tqdm(range(n_training_episodes)):
