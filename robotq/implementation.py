@@ -113,52 +113,6 @@ class SoftmaxPolicy(Policy):
         """
         return np.random.choice(list(range(len(Qtable[state]))), p=softmax(Qtable[state][:]))
 
-
-class UCBPolicy(Policy):
-    def __init__(self, c=1):
-        super().__init__()
-        self.e = 0  # Count of actions taken so far (episodes)
-        self.c = c  # Exploration parameter
-        self.N = None  # Count of times each action has been taken
-
-    def __call__(self, Qtable, state):
-        Q = Qtable[state, :]
-        num_actions = len(Q)
-
-        if self.N is None:
-            self.N = np.zeros(num_actions)
-        if self.e < num_actions:
-            action = self.e
-        else:
-            with np.errstate(divide='ignore', invalid='ignore'):
-                U = np.sqrt(self.c * np.log(max(1, self.e)) / (self.N + 1e-8))
-            U[self.N == 0] = np.inf
-            action = np.argmax(Q + U)
-        self.N[action] += 1
-        self.e += 1
-        return action
-
-
-
-class ThompsonSamplingPolicy(Policy):
-
-    def __init__(self, alpha=1.0, beta=0.0):
-        self.alpha = alpha
-        self.beta = beta
-        self.N = None
-
-    def __call__(self, Qtable, state):
-        Q = Qtable[state, :]
-        if self.N is None:
-            self.N = np.zeros(len(Q))
-        samples = np.random.normal(
-            loc=Q, scale=self.alpha/(np.sqrt(self.N) + self.beta))
-        action = np.argmax(samples)
-
-        self.N[action] += 1
-        return action
-
-
 class Qlearning:
     """
     Q-learning is a model-free reinforcement learning algorithm that learns to predict the expected return of an action in a given state.
@@ -198,20 +152,13 @@ class Qlearning:
         Returns:
         numpy.array: The trained Q-table.
         """
-        mean_reward_per_episode = []
-
         for episode in tqdm(range(n_training_episodes)):
             # self.train_policy.step()
             state, info = self.env.reset()
-            reward_per_episode = 0
-            reward_per_episode_cnt = 0
             for step in range(max_steps):
 
                 action = self.train_policy(self.Qtable, state)
                 new_state, reward, terminated, truncated, info = self.env.step(action)
-
-                reward_per_episode += reward
-                reward_per_episode_cnt+=1
 
                 done = terminated or truncated  # if we dont want to use next ep.
 
@@ -229,8 +176,7 @@ class Qlearning:
 
                 # Our next state is the new state
                 state = new_state
-            mean_reward_per_episode.append(reward_per_episode/reward_per_episode_cnt)
-        return self.Qtable, mean_reward_per_episode
+        return self.Qtable
 
 class DynaQ:
     """
